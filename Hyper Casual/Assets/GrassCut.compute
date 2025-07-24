@@ -1,0 +1,27 @@
+#pragma kernel CutGrass
+
+struct GrassBlade {
+    float3 position;
+    float seed;
+    float cut;
+};
+
+RWStructuredBuffer<GrassBlade> blades;
+
+float3 cutCenter;
+float cutRadius;
+uint count;
+
+[numthreads(256, 1, 1)]
+void CutGrass(uint id : SV_DispatchThreadID)
+{
+    if (id >= count) return;
+
+    GrassBlade b = blades[id];
+    float d = distance(b.position, cutCenter);
+
+    if (d < cutRadius)
+        b.cut = 1.0;
+
+    blades[id] = b;
+}
