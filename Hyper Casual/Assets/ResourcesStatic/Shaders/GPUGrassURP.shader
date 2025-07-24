@@ -4,17 +4,25 @@ Shader "Custom/GPUGrassURP"
     {
         _BaseColor("Base Color", Color) = (0.3, 0.7, 0.3, 1)
         _BladeHeight("Blade Height", Float) = 1.0
+        _BladeWidth("Blade Width", Float) = 0.1
         _ScaleRange("Scale Variation", Float) = 0.3
         _ColorVariation("Color Variation", Color) = (0.05, 0.05, 0.05, 0)
         _WindStrength("Wind Strength", Float) = 0.2
+        _WindDarkenStrength("Wind Darken Strength", Float) = 0.2
     }
     SubShader
     {
-        Tags { "RenderType" = "Opaque" "Queue" = "Geometry" }
+        Tags
+        {
+            "RenderType" = "Opaque" "Queue" = "Geometry"
+        }
         Pass
         {
             Name "GrassPass"
-            Tags { "LightMode" = "UniversalForward" }
+            Tags
+            {
+                "LightMode" = "UniversalForward"
+            }
 
             HLSLPROGRAM
             #pragma vertex vert
@@ -22,15 +30,17 @@ Shader "Custom/GPUGrassURP"
             #pragma multi_compile_instancing
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 
-            
 
             float4 _BaseColor;
             float4 _ColorVariation;
             float _BladeHeight;
+            float _BladeWidth;
             float _ScaleRange;
             float _WindStrength;
+            float _WindDarkenStrength;
 
-            struct GrassBlade {
+            struct GrassBlade
+            {
                 float3 position;
                 float seed;
                 float cut;
@@ -39,19 +49,23 @@ Shader "Custom/GPUGrassURP"
                 float3 padding; // padding for 16-byte alignment
             };
 
-            struct Attributes {
+            struct Attributes
+            {
                 float3 positionOS : POSITION;
                 float3 normalOS : NORMAL;
                 uint instanceID : SV_InstanceID;
             };
 
-            struct Varyings {
+            struct Varyings
+            {
                 float4 positionCS : SV_POSITION;
                 float3 normalWS : TEXCOORD0;
                 float4 color : COLOR;
             };
+
             StructuredBuffer<GrassBlade> _BladeBuffer;
             StructuredBuffer<float4x4> _ChunkToWorldBuffer;
+
             float hash(float n)
             {
                 return frac(sin(n) * 43758.5453);
@@ -73,13 +87,15 @@ Shader "Custom/GPUGrassURP"
                 float seed = blade.seed;
 
                 float scale = 1.0 + _ScaleRange * (hash(seed * 17.77) * 2.0 - 1.0);
-                float3 tint = _BaseColor.rgb + _ColorVariation.rgb * (hash(seed * 31.3) * 2.0 - 1.0);
-                tint = saturate(tint);
-
                 float wind = sin(_Time.y * 2.0 + blade.position.x * 0.2 + blade.position.z * 0.3) * _WindStrength;
+                float darkness = saturate(abs(wind)); // 0 when still, 1 when swaying
+                float3 baseTint = _BaseColor.rgb + _ColorVariation.rgb * (hash(seed * 31.3) * 2.0 - 1.0);
+                float3 tint = saturate(baseTint * (1.0 - darkness * _WindDarkenStrength));
                 float3 windOffset = float3(wind * IN.positionOS.y, 0, 0);
 
                 float3 pos = IN.positionOS + windOffset;
+                pos.xz *= _BladeWidth;
+
 
                 // Apply rotation
                 float s = sin(blade.rotation);

@@ -24,10 +24,11 @@ public class GrassChunk : MonoBehaviour
         {
             float x = Random.Range(-size.x / 2f, size.x / 2f);
             float z = Random.Range(-size.y / 2f, size.y / 2f);
-            float rotation = Random.Range(0f, Mathf.PI * 2f); // full 360°
+            var rotationRandomisationRange = 0.75f;
+            float rotation = Random.Range(Mathf.PI*rotationRandomisationRange, Mathf.PI * (2 - rotationRandomisationRange));
             float seed = Random.value;
 
-            Vector3 local = new Vector3(x, 0, z); // now relative to chunk
+            Vector3 local = new Vector3(x, 2, z); // now relative to chunk
 
             blades.Add(new GrassBlade
             {
