@@ -5,6 +5,7 @@ public class GrassChunk : MonoBehaviour
 {
     public Vector2 size = new Vector2(10f, 10f);
     public int density = 500;
+    public float grassYOrigin = 1;
     private GPUGrassRenderer grassRenderer;
 
     void OnEnable()
@@ -28,7 +29,7 @@ public class GrassChunk : MonoBehaviour
             float rotation = Random.Range(Mathf.PI*rotationRandomisationRange, Mathf.PI * (2 - rotationRandomisationRange));
             float seed = Random.value;
 
-            Vector3 local = new Vector3(x, 2, z); // now relative to chunk
+            Vector3 local = new Vector3(x, grassYOrigin, z); // now relative to chunk
 
             blades.Add(new GrassBlade
             {

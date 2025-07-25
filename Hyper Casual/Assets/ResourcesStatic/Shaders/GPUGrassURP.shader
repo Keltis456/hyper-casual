@@ -9,6 +9,8 @@ Shader "Custom/GPUGrassURP"
         _ColorVariation("Color Variation", Color) = (0.05, 0.05, 0.05, 0)
         _WindStrength("Wind Strength", Float) = 0.2
         _WindDarkenStrength("Wind Darken Strength", Float) = 0.2
+        _WindNoiseScale("Wind Noise Scale", Float) = 0.5
+        _WindNoiseSpeed("Wind Noise Speed", Float) = 0.1
     }
     SubShader
     {
@@ -38,6 +40,8 @@ Shader "Custom/GPUGrassURP"
             float _ScaleRange;
             float _WindStrength;
             float _WindDarkenStrength;
+            float _WindNoiseSpeed;
+            float _WindNoiseScale;
 
             struct GrassBlade
             {
@@ -71,6 +75,30 @@ Shader "Custom/GPUGrassURP"
                 return frac(sin(n) * 43758.5453);
             }
 
+            float2 fade(float2 t)
+            {
+                return t * t * (3.0 - 2.0 * t);
+            }
+
+            float hash(float2 p)
+            {
+                return frac(sin(dot(p, float2(127.1, 311.7))) * 43758.5453);
+            }
+
+            float noise(float2 p)
+            {
+                float2 i = floor(p);
+                float2 f = frac(p);
+
+                float a = hash(i);
+                float b = hash(i + float2(1.0, 0.0));
+                float c = hash(i + float2(0.0, 1.0));
+                float d = hash(i + float2(1.0, 1.0));
+
+                float2 u = fade(f);
+                return lerp(lerp(a, b, u.x), lerp(c, d, u.x), u.y);
+            }
+
             Varyings vert(Attributes IN)
             {
                 Varyings OUT;
@@ -87,7 +115,13 @@ Shader "Custom/GPUGrassURP"
                 float seed = blade.seed;
 
                 float scale = 1.0 + _ScaleRange * (hash(seed * 17.77) * 2.0 - 1.0);
-                float wind = sin(_Time.y * 2.0 + blade.position.x * 0.2 + blade.position.z * 0.3) * _WindStrength;
+                float2 windUV = (blade.position.xz + _Time.y * _WindNoiseSpeed) * _WindNoiseScale;
+                float windNoise = noise(windUV); // [0,1]
+                float wind = (windNoise - 0.5) * 2.0 * _WindStrength; // remap to [-1,1]
+
+                // Optional global wave for gusts
+                float globalWave = sin(_Time.y * 0.1);
+                wind *= lerp(0.8, 1.2, (globalWave + 1.0) * 0.5);
                 float darkness = saturate(abs(wind)); // 0 when still, 1 when swaying
                 float3 baseTint = _BaseColor.rgb + _ColorVariation.rgb * (hash(seed * 31.3) * 2.0 - 1.0);
                 float3 tint = saturate(baseTint * (1.0 - darkness * _WindDarkenStrength));
