@@ -149,9 +149,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   player: {fileID: 196599681}
-  levelChunks:
-  - {fileID: 5872004098033447294, guid: be61482f8899d4393ab724af9c445c21, type: 3}
-  chunkLength: 100
+  levelChunk: {fileID: 5872004098033447294, guid: be61482f8899d4393ab724af9c445c21, type: 3}
+  chunkLength: 10
   initialChunks: 3
   maxChunks: 100
   chunkParent: {fileID: 85103346}
@@ -182,6 +181,7 @@ GameObject:
   m_Component:
   - component: {fileID: 196599681}
   - component: {fileID: 196599680}
+  - component: {fileID: 196599682}
   m_Layer: 0
   m_Name: PlayerController
   m_TagString: Untagged
@@ -196,7 +196,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 196599679}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 27cccc88c6d2a41209822ce2cd3d607f, type: 3}
   m_Name: 
@@ -213,13 +213,28 @@ Transform:
   m_GameObject: {fileID: 196599679}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 2.68, y: 2, z: 0}
+  m_LocalPosition: {x: 0, y: 1.5, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1245433405}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &196599682
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 196599679}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8c35bb18af5d4e54ac2d33b8ebc62354, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  cutShader: {fileID: 7200000, guid: f0cf7ae99a6ad4ec5ac17f245154ad13, type: 3}
+  grassRenderer: {fileID: 741208568}
+  cutRadius: 3
 --- !u!1 &330585543
 GameObject:
   m_ObjectHideFlags: 0
@@ -524,7 +539,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   grassMesh: {fileID: 4300000, guid: 626500d3b49cf415ab0987de31b75128, type: 2}
   grassMaterial: {fileID: 2100000, guid: 6e8276c76e6ed4c78a8a56534e5bb7f8, type: 2}
-  areaSize: 100
 --- !u!4 &741208569
 Transform:
   m_ObjectHideFlags: 0

@@ -4,9 +4,13 @@ struct GrassBlade {
     float3 position;
     float seed;
     float cut;
+    uint chunkIndex;
+    float rotation;
+    float3 padding;
 };
 
 RWStructuredBuffer<GrassBlade> blades;
+StructuredBuffer<float4x4> _ChunkToWorldBuffer;
 
 float3 cutCenter;
 float cutRadius;
@@ -18,7 +22,11 @@ void CutGrass(uint id : SV_DispatchThreadID)
     if (id >= count) return;
 
     GrassBlade b = blades[id];
-    float d = distance(b.position, cutCenter);
+
+    // Convert blade.position from chunk-local to world
+    float3 worldPos = mul(_ChunkToWorldBuffer[b.chunkIndex], float4(b.position, 1.0)).xyz;
+
+    float d = distance(worldPos, cutCenter);
 
     if (d < cutRadius)
         b.cut = 1.0;
