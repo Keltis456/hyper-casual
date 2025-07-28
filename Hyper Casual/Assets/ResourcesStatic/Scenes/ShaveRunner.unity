@@ -128,7 +128,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 85103346}
-  - component: {fileID: 85103345}
+  - component: {fileID: 85103347}
   m_Layer: 0
   m_Name: LevelManager
   m_TagString: Untagged
@@ -136,26 +136,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &85103345
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 85103344}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a013b56f9ba94422ea6deac6682ffae2, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  player: {fileID: 196599681}
-  levelChunk: {fileID: 5872004098033447294, guid: be61482f8899d4393ab724af9c445c21, type: 3}
-  chunkLength: 10
-  initialChunks: 3
-  maxChunks: 100
-  chunkParent: {fileID: 85103346}
-  winScreen: {fileID: 0}
-  endZ: 100
 --- !u!4 &85103346
 Transform:
   m_ObjectHideFlags: 0
@@ -171,6 +151,27 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &85103347
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 85103344}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 359741e2b479e4fdea3835e9a8b29b29, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  player: {fileID: 196599681}
+  levelChunkPrefab: {fileID: 5872004098033447294, guid: be61482f8899d4393ab724af9c445c21, type: 3}
+  chunkLength: 10
+  initialChunks: 3
+  maxChunks: 100
+  chunkParent: {fileID: 85103346}
+  winScreen: {fileID: 0}
+  endZ: 100
+  preWarmCount: 10
 --- !u!1 &196599679
 GameObject:
   m_ObjectHideFlags: 0
@@ -180,7 +181,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 196599681}
-  - component: {fileID: 196599680}
+  - component: {fileID: 196599683}
   - component: {fileID: 196599682}
   m_Layer: 0
   m_Name: PlayerController
@@ -189,21 +190,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &196599680
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 196599679}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 27cccc88c6d2a41209822ce2cd3d607f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  forwardSpeed: 10
-  horizontalSpeed: 10
-  laneLimit: 3
 --- !u!4 &196599681
 Transform:
   m_ObjectHideFlags: 0
@@ -229,12 +215,29 @@ MonoBehaviour:
   m_GameObject: {fileID: 196599679}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8c35bb18af5d4e54ac2d33b8ebc62354, type: 3}
+  m_Script: {fileID: 11500000, guid: d6ab43a647ff044898344dce0b6004eb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  forwardSpeed: 5
+  horizontalSpeed: 10
+  laneLimit: 3
+  smoothing: 5
+--- !u!114 &196599683
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 196599679}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 65bd52fbba8eb4c94a981cc26d4b140b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   cutShader: {fileID: 7200000, guid: f0cf7ae99a6ad4ec5ac17f245154ad13, type: 3}
-  grassRenderer: {fileID: 741208568}
-  cutRadius: 3
+  cutRadius: 2
+  cutDistance: 0.5
+  enableCutting: 1
 --- !u!1 &330585543
 GameObject:
   m_ObjectHideFlags: 0
@@ -713,6 +716,58 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1245433404}
   m_Mesh: {fileID: 10208, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!1 &1520628249
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1520628251}
+  - component: {fileID: 1520628250}
+  m_Layer: 0
+  m_Name: GameLifetimeScope
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1520628250
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1520628249}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 10b83a971752b4f19bf48305cbbdb346, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  parentReference:
+    TypeName: 
+  autoRun: 1
+  autoInjectGameObjects:
+  - {fileID: 85103344}
+  - {fileID: 196599679}
+  grassRenderer: {fileID: 741208568}
+  grassCutter: {fileID: 196599683}
+--- !u!4 &1520628251
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1520628249}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
@@ -723,3 +778,4 @@ SceneRoots:
   - {fileID: 85103346}
   - {fileID: 196599681}
   - {fileID: 741208569}
+  - {fileID: 1520628251}

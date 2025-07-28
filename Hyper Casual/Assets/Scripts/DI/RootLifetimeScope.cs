@@ -1,10 +1,10 @@
-// using Games.Core;
 using SceneManagement;
-// using Streak;
 using UnityEngine;
 using VContainer;
 using VContainer.Unity;
 using CoroutineRunner = Common.CoroutineRunner;
+using Common.Interfaces;
+using Common.Services;
 
 namespace DI
 {
@@ -12,14 +12,32 @@ namespace DI
     {
         protected override void Configure(IContainerBuilder builder)
         {
+            // Core Services
             builder.RegisterComponentOnNewGameObject<CoroutineRunner>(Lifetime.Singleton).DontDestroyOnLoad();
             builder.Register<SceneManager>(Lifetime.Singleton);
-            // builder.Register<StreakManager>(Lifetime.Singleton);
-            //
-            // builder.Register<GameResultNotifier>(Lifetime.Singleton).AsImplementedInterfaces();
-            // builder.Register<ScoreChangesNotifier>(Lifetime.Singleton).AsImplementedInterfaces();
-            //
-            // builder.Register<GameResultControllerMock>(Lifetime.Scoped).AsImplementedInterfaces();
+            
+            // Configuration System
+            builder.Register<ConfigurationService>(Lifetime.Singleton).AsImplementedInterfaces();
+            
+            // Game State Management
+            builder.Register<GameStateManager>(Lifetime.Singleton).AsImplementedInterfaces();
+            
+            // Event System
+            builder.Register<EventBus>(Lifetime.Singleton).AsImplementedInterfaces();
+            
+            // Input System
+            builder.RegisterComponentOnNewGameObject<InputService>(Lifetime.Singleton).DontDestroyOnLoad()
+                .AsImplementedInterfaces();
+                
+            
+            // Object Pooling
+            builder.RegisterComponentOnNewGameObject<ObjectPoolService>(Lifetime.Singleton).DontDestroyOnLoad()
+                .AsImplementedInterfaces();
+            
+            // TODO: Add analytics, save system, audio manager, etc.
+            // builder.Register<AnalyticsService>(Lifetime.Singleton).AsImplementedInterfaces();
+            // builder.Register<SaveService>(Lifetime.Singleton).AsImplementedInterfaces();
+            // builder.Register<AudioService>(Lifetime.Singleton).AsImplementedInterfaces();
         }
     }
 }
