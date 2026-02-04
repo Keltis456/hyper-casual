@@ -6,9 +6,15 @@ namespace Common.Services
 {
     public class ConfigurationService : IConfigurationService
     {
-        private const string CONFIG_RESOURCE_PATH = "GameConfig";
-        
-        public GameConfig GameConfig { get; private set; }
+        public GameConfig Config { get; private set; }
+
+        public float PlayerForwardSpeed => Config?.playerForwardSpeed ?? 5f;
+        public float PlayerHorizontalSpeed => Config?.playerHorizontalSpeed ?? 10f;
+        public float PlayerLaneLimit => Config?.playerLaneLimit ?? 3f;
+        public float PlayerMovementSmoothing => Config?.playerMovementSmoothing ?? 5f;
+        public float GrassCutRadius => Config?.grassCutRadius ?? 1f;
+        public float GrassCutDistance => Config?.grassCutDistance ?? 0.5f;
+        public int ObjectPoolPreWarmCount => Config?.objectPoolPreWarmCount ?? 10;
 
         public ConfigurationService()
         {
@@ -17,23 +23,18 @@ namespace Common.Services
 
         public void LoadConfiguration()
         {
-            GameConfig = Resources.Load<GameConfig>(CONFIG_RESOURCE_PATH);
+            Config = Resources.Load<GameConfig>(GameConstants.ConfigResourcePath);
             
-            if (GameConfig == null)
+            if (Config == null)
             {
-                Debug.LogWarning($"GameConfig not found at Resources/{CONFIG_RESOURCE_PATH}. Creating default configuration.");
-                GameConfig = ScriptableObject.CreateInstance<GameConfig>();
+                Debug.LogWarning($"GameConfig not found at Resources/{GameConstants.ConfigResourcePath}. Using default values.");
+                Config = ScriptableObject.CreateInstance<GameConfig>();
             }
-            
-            Debug.Log("Game configuration loaded successfully.");
         }
 
         public void SaveConfiguration()
         {
-            // In a real project, you might want to save runtime changes to PlayerPrefs or a file
-            // For now, we'll just save to PlayerPrefs for runtime settings
             PlayerPrefs.Save();
-            Debug.Log("Configuration saved to PlayerPrefs.");
         }
 
         public T GetValue<T>(string key, T defaultValue = default)

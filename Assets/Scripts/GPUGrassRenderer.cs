@@ -3,13 +3,14 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System;
+using Common;
 
 public class GPUGrassRenderer : MonoBehaviour
 {
-    private ComputeBuffer matrixBuffer;
-    public Mesh grassMesh;
-    public Material grassMaterial;
+    [SerializeField] private Mesh grassMesh;
+    [SerializeField] private Material grassMaterial;
 
+    private ComputeBuffer matrixBuffer;
     private List<GrassChunk> chunks = new List<GrassChunk>();
     private bool dirty = false;
 
@@ -21,8 +22,6 @@ public class GPUGrassRenderer : MonoBehaviour
     private readonly uint[] args = new uint[5];
     public ComputeBuffer GetMatrixBuffer()
     {
-        if (matrixBuffer == null)
-            Debug.LogWarning("Matrix buffer not ready yet.");
         return matrixBuffer;
     }
 
@@ -104,16 +103,14 @@ public class GPUGrassRenderer : MonoBehaviour
                     previousCuts[key] = b.cut;
                 }
             }
-            catch (Exception e)
+            catch (Exception)
             {
-                Debug.LogWarning($"Failed to read previous blade buffer: {e.Message}");
             }
         }
         // --- END PRESERVE CUT STATE ---
 
         if (chunks == null || chunks.Count == 0)
         {
-            Debug.LogWarning("No chunks registered. Skipping grass buffer rebuild.");
             return;
         }
 
@@ -134,7 +131,6 @@ public class GPUGrassRenderer : MonoBehaviour
         bladeCount = blades.Count;
         if (bladeCount == 0)
         {
-            Debug.LogWarning("No grass blades generated. Skipping buffer creation.");
             return;
         }
 
@@ -148,9 +144,8 @@ public class GPUGrassRenderer : MonoBehaviour
         matrixBuffer = new ComputeBuffer(chunkMatrices.Count, sizeof(float) * 16);
         matrixBuffer.SetData(chunkMatrices);
 
-        // Assign to material
         grassMaterial.SetBuffer("_ChunkToWorldBuffer", matrixBuffer);
-        grassMaterial.SetMatrixArray("_ChunkToWorld", chunkMatrices.Take(64).ToArray()); // fallback if shader uses this
+        grassMaterial.SetMatrixArray("_ChunkToWorld", chunkMatrices.Take(GameConstants.MaxMatrixCount).ToArray());
         grassMaterial.SetBuffer("_BladeBuffer", bladeBuffer);
         grassMaterial.SetMatrix("_LocalToWorld", transform.localToWorldMatrix);
 
@@ -164,8 +159,6 @@ public class GPUGrassRenderer : MonoBehaviour
         argsBuffer?.Release();
         argsBuffer = new ComputeBuffer(1, args.Length * sizeof(uint), ComputeBufferType.IndirectArguments);
         argsBuffer.SetData(args);
-
-        Debug.Log($"Chunks: {chunks.Count}, Blades: {bladeCount}, Matrices: {chunkMatrices.Count}");
     }
 
     public ComputeBuffer GetBladeBuffer() => bladeBuffer;

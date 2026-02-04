@@ -4,7 +4,16 @@ namespace Common.Interfaces
 {
     public interface IConfigurationService
     {
-        GameConfig GameConfig { get; }
+        GameConfig Config { get; }
+        
+        float PlayerForwardSpeed { get; }
+        float PlayerHorizontalSpeed { get; }
+        float PlayerLaneLimit { get; }
+        float PlayerMovementSmoothing { get; }
+        float GrassCutRadius { get; }
+        float GrassCutDistance { get; }
+        int ObjectPoolPreWarmCount { get; }
+        
         void LoadConfiguration();
         void SaveConfiguration();
         T GetValue<T>(string key, T defaultValue = default);

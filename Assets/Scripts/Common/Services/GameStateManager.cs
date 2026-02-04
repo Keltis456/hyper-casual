@@ -1,14 +1,21 @@
 using System;
 using Common.Interfaces;
-using UnityEngine;
 
 namespace Common.Services
 {
-    public class GameStateManager : IGameStateManager
+    public class GameStateManager : IGameStateManager, IDisposable
     {
+        private readonly ILogger _logger;
+        private bool _disposed = false;
+        
         public GameState CurrentState { get; private set; } = GameState.Menu;
         
         public event Action<GameState, GameState> OnStateChanged;
+
+        public GameStateManager(ILogger logger)
+        {
+            _logger = logger;
+        }
 
         public void ChangeState(GameState newState)
         {
@@ -16,14 +23,14 @@ namespace Common.Services
             
             if (!CanTransitionTo(newState))
             {
-                Debug.LogWarning($"Invalid state transition from {CurrentState} to {newState}");
+                _logger?.LogWarning($"Invalid state transition from {CurrentState} to {newState}");
                 return;
             }
 
             var previousState = CurrentState;
             CurrentState = newState;
             
-            Debug.Log($"Game state changed: {previousState} -> {newState}");
+            _logger?.LogInfo($"Game state changed: {previousState} -> {newState}");
             OnStateChanged?.Invoke(previousState, newState);
         }
 
@@ -38,6 +45,14 @@ namespace Common.Services
                 GameState.Loading => true,
                 _ => false
             };
+        }
+
+        public void Dispose()
+        {
+            if (_disposed) return;
+            
+            OnStateChanged = null;
+            _disposed = true;
         }
     }
 }

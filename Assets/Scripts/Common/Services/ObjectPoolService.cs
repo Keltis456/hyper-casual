@@ -1,11 +1,14 @@
 using System.Collections.Generic;
 using Common.Interfaces;
 using UnityEngine;
+using VContainer;
 
 namespace Common.Services
 {
     public class ObjectPoolService : MonoBehaviour, IObjectPoolService
     {
+        [Inject] private IComponentFactory ComponentFactory { get; set; }
+        
         private readonly Dictionary<int, ObjectPool> _pools = new();
         private readonly Dictionary<int, HashSet<GameObject>> _activeObjects = new();
 
@@ -51,8 +54,6 @@ namespace Common.Services
                 }
             }
 
-            // If not found in any pool, just destroy it
-            Debug.LogWarning($"Trying to return object {instance.name} that doesn't belong to any pool");
             Destroy(instance);
         }
 

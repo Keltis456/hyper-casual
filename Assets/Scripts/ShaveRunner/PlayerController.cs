@@ -1,80 +1,142 @@
 using UnityEngine;
+using VContainer;
+using Common;
+using Common.Interfaces;
+using ILogger = Common.Interfaces.ILogger;
 
 namespace ShaveRunner
 {
     public class PlayerController : MonoBehaviour
     {
-        [Header("Movement Settings")]
-        public float forwardSpeed = 5f; // Forward movement speed
-        public float horizontalSpeed = 10f; // Horizontal movement speed
-        public float laneLimit = 3f; // How far left/right the player can move
+        [Inject] private IInputService InputService { get; set; }
+        [Inject] private IEventBus EventBus { get; set; }
+        [Inject] private IGameStateManager GameStateManager { get; set; }
+        [Inject] private IConfigurationService ConfigService { get; set; }
+        [Inject] private ILogger Logger { get; set; }
 
-        private float _inputStartX;
-        private float _playerStartX;
-        private bool _isDragging;
+        private Vector3 _previousPosition;
+        private float _targetX;
+        private bool _isMovementEnabled = true;
+        
+        private float ForwardSpeed => ConfigService?.PlayerForwardSpeed ?? 5f;
+        private float HorizontalSpeed => ConfigService?.PlayerHorizontalSpeed ?? 10f;
+        private float LaneLimit => ConfigService?.PlayerLaneLimit ?? 3f;
+        private float Smoothing => ConfigService?.PlayerMovementSmoothing ?? 5f;
+
+        void Start()
+        {
+            _previousPosition = transform.position;
+            _targetX = transform.position.x;
+            
+            if (InputService == null)
+            {
+                Logger?.LogError($"{nameof(PlayerController)}: {nameof(InputService)} not injected!");
+            }
+            else
+            {
+                InputService.OnHorizontalInput += OnHorizontalInput;
+            }
+            
+            if (GameStateManager == null)
+            {
+                Logger?.LogError($"{nameof(PlayerController)}: {nameof(GameStateManager)} not injected!");
+            }
+            else
+            {
+                GameStateManager.OnStateChanged += OnGameStateChanged;
+            }
+            
+            if (ConfigService == null)
+            {
+                Logger?.LogError($"{nameof(PlayerController)}: {nameof(ConfigService)} not injected!");
+            }
+            
+            if (EventBus == null)
+            {
+                Logger?.LogError($"{nameof(PlayerController)}: {nameof(EventBus)} not injected!");
+            }
+        }
+
+        void OnDestroy()
+        {
+            if (InputService != null)
+            {
+                InputService.OnHorizontalInput -= OnHorizontalInput;
+            }
+            
+            if (GameStateManager != null)
+            {
+                GameStateManager.OnStateChanged -= OnGameStateChanged;
+            }
+        }
 
         void Update()
         {
-            HandleInput();
+            if (!_isMovementEnabled) return;
+
             MoveForward();
+            ApplyHorizontalMovement();
+            PublishMovementEvents();
         }
 
-        // Handles touch or mouse input for horizontal movement
-        void HandleInput()
+        private void OnHorizontalInput(float input)
         {
-#if UNITY_EDITOR || UNITY_STANDALONE
-            // Mouse input for editor/testing
-            if (Input.GetMouseButtonDown(0))
-            {
-                _isDragging = true;
-                _inputStartX = Input.mousePosition.x;
-                _playerStartX = transform.position.x;
-            }
-            else if (Input.GetMouseButtonUp(0))
-            {
-                _isDragging = false;
-            }
-            else if (_isDragging && Input.GetMouseButton(0))
-            {
-                float delta = (Input.mousePosition.x - _inputStartX) / Screen.width;
-                float targetX = _playerStartX + delta * horizontalSpeed;
-                targetX = Mathf.Clamp(targetX, -laneLimit, laneLimit);
-                Vector3 pos = transform.position;
-                pos.x = Mathf.Lerp(pos.x, targetX, Time.deltaTime * horizontalSpeed);
-                transform.position = pos;
-            }
-#else
-        // Touch input for mobile
-        if (Input.touchCount > 0)
-        {
-            Touch touch = Input.GetTouch(0);
-            if (touch.phase == TouchPhase.Began)
-            {
-                _isDragging = true;
-                _inputStartX = touch.position.x;
-                _playerStartX = transform.position.x;
-            }
-            else if (touch.phase == TouchPhase.Ended || touch.phase == TouchPhase.Canceled)
-            {
-                _isDragging = false;
-            }
-            else if (_isDragging && (touch.phase == TouchPhase.Moved || touch.phase == TouchPhase.Stationary))
-            {
-                float delta = (touch.position.x - _inputStartX) / Screen.width;
-                float targetX = _playerStartX + delta * horizontalSpeed;
-                targetX = Mathf.Clamp(targetX, -laneLimit, laneLimit);
-                Vector3 pos = transform.position;
-                pos.x = Mathf.Lerp(pos.x, targetX, Time.deltaTime * horizontalSpeed);
-                transform.position = pos;
-            }
-        }
-#endif
+            if (!_isMovementEnabled) return;
+            
+            _targetX = Mathf.Clamp(transform.position.x + input * HorizontalSpeed, -LaneLimit, LaneLimit);
         }
 
-        // Moves the player forward automatically
-        void MoveForward()
+        private void OnGameStateChanged(GameState previousState, GameState newState)
         {
-            transform.Translate(Vector3.forward * forwardSpeed * Time.deltaTime);
+            _isMovementEnabled = newState == GameState.Playing;
+            
+            if (!_isMovementEnabled)
+            {
+                _targetX = transform.position.x;
+            }
+        }
+
+        private void MoveForward()
+        {
+            transform.Translate(Vector3.forward * ForwardSpeed * Time.deltaTime);
+        }
+
+        private void ApplyHorizontalMovement()
+        {
+            Vector3 pos = transform.position;
+            pos.x = Mathf.Lerp(pos.x, _targetX, Time.deltaTime * Smoothing);
+            transform.position = pos;
+        }
+
+        private void PublishMovementEvents()
+        {
+            Vector3 currentPosition = transform.position;
+            
+            if (Vector3.Distance(currentPosition, _previousPosition) > GameConstants.MovementEventThreshold)
+            {
+                EventBus?.Publish(new PlayerMovedEvent
+                {
+                    Position = currentPosition,
+                    PreviousPosition = _previousPosition
+                });
+                
+                _previousPosition = currentPosition;
+            }
+        }
+
+        public void SetMovementEnabled(bool enabled)
+        {
+            _isMovementEnabled = enabled;
+        }
+
+        public float GetCurrentSpeed()
+        {
+            return ForwardSpeed;
+        }
+
+        public Vector3 GetVelocity()
+        {
+            return Vector3.forward * ForwardSpeed + Vector3.right * ((_targetX - transform.position.x) * Smoothing);
         }
     }
-} 
+}

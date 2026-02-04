@@ -14,12 +14,6 @@ namespace Common
             _prefab = prefab;
             _parent = parent;
             _pool = new Stack<GameObject>(initialSize);
-        
-            // Pre-instantiate objects
-            for (var i = 0; i < initialSize; i++)
-            {
-                CreateNewObject();
-            }
         }
     
         public GameObject Get()

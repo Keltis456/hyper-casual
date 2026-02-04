@@ -1,17 +1,21 @@
 using System.Collections.Generic;
 using UnityEngine;
+using Common.Interfaces;
 
 public class GrassChunk : MonoBehaviour
 {
-    public Vector2 size = new Vector2(10f, 10f);
-    public int density = 500;
-    public float grassYOrigin = 1;
+    [SerializeField] private Vector2 size = new Vector2(10f, 10f);
+    [SerializeField] private int density = 500;
+    [SerializeField] private float grassYOrigin = 1;
+    [SerializeField] private string chunkId = "";
+    
     private GPUGrassRenderer grassRenderer;
-
-    // --- Persistent cut state ---
-    [SerializeField] public string chunkId = "";
     private static Dictionary<string, Dictionary<GrassBlade.BladeKey, float>> cutStateCache = new();
-    // --- End persistent cut state ---
+
+    public Vector2 Size => size;
+    public int Density => density;
+    public float GrassYOrigin => grassYOrigin;
+    public string ChunkId => chunkId;
 
     void Awake()
     {
@@ -19,25 +23,38 @@ public class GrassChunk : MonoBehaviour
             chunkId = System.Guid.NewGuid().ToString();
     }
 
+    public void Initialize(GPUGrassRenderer renderer)
+    {
+        grassRenderer = renderer;
+    }
+
     void OnEnable()
     {
-        grassRenderer = FindAnyObjectByType<GPUGrassRenderer>();
+        if (grassRenderer == null)
+        {
+            grassRenderer = FindFirstObjectByType<GPUGrassRenderer>();
+        }
+        
         grassRenderer?.RegisterChunk(this);
     }
 
     void OnDisable()
     {
-        // Cache cut state before unregistering
-        CacheCutState();
-        grassRenderer?.UnregisterChunk(this);
+        if (grassRenderer != null)
+        {
+            CacheCutState();
+            grassRenderer.UnregisterChunk(this);
+        }
     }
 
     private void CacheCutState()
     {
-        var renderer = FindAnyObjectByType<GPUGrassRenderer>();
-        if (renderer == null) return;
-        var bladeBuffer = renderer.GetBladeBuffer();
-        int bladeCount = renderer.GetBladeCount();
+        if (grassRenderer == null) return;
+        
+        var bladeBuffer = grassRenderer.GetBladeBuffer();
+        if (bladeBuffer == null) return;
+        
+        int bladeCount = grassRenderer.GetBladeCount();
         if (bladeBuffer == null || bladeCount == 0) return;
         try
         {
@@ -57,15 +74,12 @@ public class GrassChunk : MonoBehaviour
         catch { }
     }
 
-    // Helper to get this chunk's index in the renderer
     private uint GetChunkIndex()
     {
-        var renderer = FindAnyObjectByType<GPUGrassRenderer>();
-        if (renderer == null) return 0;
-        return (uint)renderer.GetChunkIndex(this);
+        if (grassRenderer == null) return 0;
+        return (uint)grassRenderer.GetChunkIndex(this);
     }
 
-    // Called by GPUGrassRenderer to get cached cut state for this chunk
     public Dictionary<GrassBlade.BladeKey, float> GetCachedCutStateAndClear()
     {
         if (cutStateCache.TryGetValue(chunkId, out var dict))
@@ -78,7 +92,6 @@ public class GrassChunk : MonoBehaviour
 
     public void SpawnGrass(List<GrassBlade> blades, Transform root, uint chunkIndex, Dictionary<GrassBlade.BladeKey, float> previousCuts = null)
     {
-        // Deterministic seed based only on chunkId
         int seed = chunkId.GetHashCode();
         var rand = new System.Random(seed);
 
@@ -90,7 +103,7 @@ public class GrassChunk : MonoBehaviour
             float rotation = (float)(rand.NextDouble() * (Mathf.PI * (2 - rotationRandomisationRange) - Mathf.PI * rotationRandomisationRange) + Mathf.PI * rotationRandomisationRange);
             float seedVal = (float)rand.NextDouble();
 
-            Vector3 local = new Vector3(x, grassYOrigin, z); // now relative to chunk
+            Vector3 local = new Vector3(x, grassYOrigin, z);
 
             float cut = 0f;
             if (previousCuts != null)
@@ -113,8 +126,7 @@ public class GrassChunk : MonoBehaviour
 
     public void ReRegister()
     {
-        var renderer = FindAnyObjectByType<GPUGrassRenderer>();
-        renderer?.UnregisterChunk(this);
-        renderer?.RegisterChunk(this);
+        grassRenderer?.UnregisterChunk(this);
+        grassRenderer?.RegisterChunk(this);
     }
 }

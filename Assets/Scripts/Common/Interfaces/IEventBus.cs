@@ -36,4 +36,10 @@ namespace Common.Interfaces
         public float Distance { get; set; }
         public bool IsWin { get; set; }
     }
+
+    public class ObjectShavedEvent
+    {
+        public UnityEngine.Vector3 Position { get; set; }
+        public string ObjectType { get; set; }
+    }
 }

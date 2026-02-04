@@ -1,6 +1,7 @@
 using SceneManagement;
 using UnityEngine;
 using VContainer;
+using System.Threading.Tasks;
 
 namespace Intro
 {
@@ -12,13 +13,13 @@ namespace Intro
         [SerializeField] private string sceneToLoad;
         [SerializeField] private float delayBeforeActivation = 1f;
 
-        void Start()
+        async void Start()
         {
             var loadingParams = SceneLoadingParameters.CreateWithDelay(
                 sceneName: sceneToLoad,
                 delay: delayBeforeActivation
             );
-            SceneManager.LoadScene(loadingParams);
+            await SceneManager.LoadSceneAsync(loadingParams);
         }
     }
 }

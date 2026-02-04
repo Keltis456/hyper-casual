@@ -1,34 +1,58 @@
 using UnityEngine;
+using VContainer;
+using Common.Interfaces;
+using ShaveRunner;
+using ILogger = Common.Interfaces.ILogger;
 
 public class CameraController : MonoBehaviour
 {
-    public Transform player; // Reference to the player transform
-    public float smoothSpeed = 5f; // How smoothly the camera follows
+    [SerializeField] private float smoothSpeed = 5f;
 
-    private Vector3 offset; // Initial offset from the player
+    [Inject] private PlayerController player { get; set; }
+    [Inject] private IEventBus EventBus { get; set; }
+    [Inject] private ILogger Logger { get; set; }
+
+    private Vector3 offset;
+    private Transform playerTransform;
 
     void Start()
     {
         if (player == null)
         {
-            Debug.LogError("CameraController: Player reference not set.");
+            Logger?.LogError($"{nameof(CameraController)}: {nameof(player)} not injected!");
             enabled = false;
             return;
         }
-        // Calculate initial offset
-        offset = transform.position - player.position;
+
+        if (EventBus == null)
+        {
+            Logger?.LogError($"{nameof(CameraController)}: {nameof(EventBus)} not injected!");
+        }
+
+        playerTransform = player.transform;
+        offset = transform.position - playerTransform.position;
+        
+        if (EventBus != null)
+        {
+            EventBus.Subscribe<PlayerMovedEvent>(OnPlayerMoved);
+        }
     }
 
-    void LateUpdate()
+    void OnDestroy()
     {
-        if (player == null) return;
-        // Only follow the player's z position, keep x and y offset
+        if (EventBus != null)
+        {
+            EventBus.Unsubscribe<PlayerMovedEvent>(OnPlayerMoved);
+        }
+    }
+
+    private void OnPlayerMoved(PlayerMovedEvent playerEvent)
+    {
         Vector3 targetPos = new Vector3(
-            transform.position.x, // Keep current x
-            transform.position.y, // Keep current y
-            player.position.z + offset.z // Follow player's z
+            transform.position.x,
+            transform.position.y,
+            playerEvent.Position.z + offset.z
         );
-        // Smoothly interpolate to the target position
         transform.position = Vector3.Lerp(transform.position, targetPos, smoothSpeed * Time.deltaTime);
     }
 } 

@@ -5,9 +5,10 @@ using UnityEngine;
 
 namespace Common.Services
 {
-    public class EventBus : IEventBus
+    public class EventBus : IEventBus, IDisposable
     {
         private readonly Dictionary<Type, List<Delegate>> _eventHandlers = new();
+        private bool _disposed = false;
 
         public void Subscribe<T>(Action<T> handler) where T : class
         {
@@ -63,6 +64,14 @@ namespace Common.Services
         public void Clear()
         {
             _eventHandlers.Clear();
+        }
+
+        public void Dispose()
+        {
+            if (_disposed) return;
+            
+            Clear();
+            _disposed = true;
         }
     }
 }
