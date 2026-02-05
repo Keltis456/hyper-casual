@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using VContainer;
 using Common;
@@ -9,10 +10,11 @@ namespace ShaveRunner
     public class PlayerController : MonoBehaviour
     {
         [Inject] private IInputService InputService { get; set; }
-        [Inject] private IEventBus EventBus { get; set; }
         [Inject] private IGameStateManager GameStateManager { get; set; }
         [Inject] private IConfigurationService ConfigService { get; set; }
         [Inject] private ILogger Logger { get; set; }
+
+        public event Action<PlayerMovedEvent> OnPlayerMoved;
 
         private Vector3 _previousPosition;
         private float _targetX;
@@ -49,11 +51,6 @@ namespace ShaveRunner
             if (ConfigService == null)
             {
                 Logger?.LogError($"{nameof(PlayerController)}: {nameof(ConfigService)} not injected!");
-            }
-            
-            if (EventBus == null)
-            {
-                Logger?.LogError($"{nameof(PlayerController)}: {nameof(EventBus)} not injected!");
             }
         }
 
@@ -114,7 +111,7 @@ namespace ShaveRunner
             
             if (Vector3.Distance(currentPosition, _previousPosition) > GameConstants.MovementEventThreshold)
             {
-                EventBus?.Publish(new PlayerMovedEvent
+                OnPlayerMoved?.Invoke(new PlayerMovedEvent
                 {
                     Position = currentPosition,
                     PreviousPosition = _previousPosition
@@ -138,5 +135,11 @@ namespace ShaveRunner
         {
             return Vector3.forward * ForwardSpeed + Vector3.right * ((_targetX - transform.position.x) * Smoothing);
         }
+    }
+
+    public class PlayerMovedEvent
+    {
+        public Vector3 Position { get; set; }
+        public Vector3 PreviousPosition { get; set; }
     }
 }

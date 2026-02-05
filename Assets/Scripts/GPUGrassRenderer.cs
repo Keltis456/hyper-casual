@@ -12,6 +12,8 @@ public class GPUGrassRenderer : MonoBehaviour
 
     private ComputeBuffer matrixBuffer;
     private List<GrassChunk> chunks = new List<GrassChunk>();
+    private Dictionary<GrassChunk, uint> chunkToStableIndex = new Dictionary<GrassChunk, uint>();
+    private uint nextStableIndex = 0;
     private bool dirty = false;
 
     private ComputeBuffer bladeBuffer;
@@ -30,6 +32,10 @@ public class GPUGrassRenderer : MonoBehaviour
         if (!chunks.Contains(chunk))
         {
             chunks.Add(chunk);
+            if (!chunkToStableIndex.ContainsKey(chunk))
+            {
+                chunkToStableIndex[chunk] = nextStableIndex++;
+            }
             dirty = true;
         }
     }
@@ -37,7 +43,10 @@ public class GPUGrassRenderer : MonoBehaviour
     public void UnregisterChunk(GrassChunk chunk)
     {
         if (chunks.Remove(chunk))
+        {
+            chunkToStableIndex.Remove(chunk);
             dirty = true;
+        }
     }
 
     void OnEnable()
@@ -115,17 +124,20 @@ public class GPUGrassRenderer : MonoBehaviour
         }
 
         List<GrassBlade> blades = new();
-        List<Matrix4x4> chunkMatrices = new();
-
-        for (int i = 0; i < chunks.Count; i++)
+        Matrix4x4[] chunkMatrices = new Matrix4x4[GameConstants.MaxMatrixCount];
+        for (int i = 0; i < GameConstants.MaxMatrixCount; i++)
         {
-            var chunk = chunks[i];
-            if (chunk == null) continue;
+            chunkMatrices[i] = Matrix4x4.identity;
+        }
 
-            chunkMatrices.Add(chunk.transform.localToWorldMatrix);
-            // Use per-chunk cached cut state if available
+        foreach (var chunk in chunks)
+        {
+            if (chunk == null) continue;
+            if (!chunkToStableIndex.TryGetValue(chunk, out uint stableIndex)) continue;
+
+            chunkMatrices[stableIndex] = chunk.transform.localToWorldMatrix;
             var chunkCuts = chunk.GetCachedCutStateAndClear();
-            chunk.SpawnGrass(blades, transform, (uint)i, chunkCuts ?? previousCuts); // pass per-chunk or global cuts
+            chunk.SpawnGrass(blades, transform, stableIndex, chunkCuts ?? previousCuts);
         }
 
         bladeCount = blades.Count;
@@ -139,13 +151,12 @@ public class GPUGrassRenderer : MonoBehaviour
         bladeBuffer = new ComputeBuffer(bladeCount, Marshal.SizeOf(typeof(GrassBlade)));
         bladeBuffer.SetData(blades);
 
-        // Create matrix buffer
         matrixBuffer?.Release();
-        matrixBuffer = new ComputeBuffer(chunkMatrices.Count, sizeof(float) * 16);
+        matrixBuffer = new ComputeBuffer(GameConstants.MaxMatrixCount, sizeof(float) * 16);
         matrixBuffer.SetData(chunkMatrices);
 
         grassMaterial.SetBuffer("_ChunkToWorldBuffer", matrixBuffer);
-        grassMaterial.SetMatrixArray("_ChunkToWorld", chunkMatrices.Take(GameConstants.MaxMatrixCount).ToArray());
+        grassMaterial.SetMatrixArray("_ChunkToWorld", chunkMatrices);
         grassMaterial.SetBuffer("_BladeBuffer", bladeBuffer);
         grassMaterial.SetMatrix("_LocalToWorld", transform.localToWorldMatrix);
 
@@ -164,9 +175,10 @@ public class GPUGrassRenderer : MonoBehaviour
     public ComputeBuffer GetBladeBuffer() => bladeBuffer;
     public int GetBladeCount() => bladeCount;
 
-    // Add a method to get chunk index
     public int GetChunkIndex(GrassChunk chunk)
     {
-        return chunks.IndexOf(chunk);
+        if (chunkToStableIndex.TryGetValue(chunk, out uint stableIndex))
+            return (int)stableIndex;
+        return -1;
     }
 }

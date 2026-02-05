@@ -16,22 +16,20 @@ MonoBehaviour:
   playerHorizontalSpeed: 10
   playerLaneLimit: 3
   playerMovementSmoothing: 5
-  chunkLength: 20
+  chunkWidth: 10
+  chunkLength: 100
   initialChunks: 3
   maxChunks: 5
-  levelEndDistance: 100
+  chunkDespawnDistanceMultiplier: 3
+  grassDensityPerChunk: 500
+  grassYOrigin: 1
   grassCutRadius: 1
   grassCutDistance: 0.5
-  grassDensityPerChunk: 500
   objectPoolPreWarmCount: 10
   targetFrameRate: 60
-  enableVSync: 0
   maxGrassRenderDistance: 50
   inputSensitivity: 1
-  enableHapticFeedback: 1
   masterVolume: 1
   sfxVolume: 1
   musicVolume: 0.7
   enableDebugLogs: 0
-  showPerformanceStats: 0
-  enableGizmos: 0

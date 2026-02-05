@@ -6,7 +6,7 @@ namespace Common.Services
     public class GameStateManager : IGameStateManager, IDisposable
     {
         private readonly ILogger _logger;
-        private bool _disposed = false;
+        private bool _disposed;
         
         public GameState CurrentState { get; private set; } = GameState.Menu;
         

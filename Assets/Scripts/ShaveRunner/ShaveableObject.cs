@@ -10,7 +10,7 @@ namespace ShaveRunner
         [SerializeField] private Animator animator;
         [SerializeField] private string shaveTrigger = "Shave";
 
-        private bool isShaved = false;
+        private bool isShaved;
 
         private void OnTriggerEnter(Collider other)
         {

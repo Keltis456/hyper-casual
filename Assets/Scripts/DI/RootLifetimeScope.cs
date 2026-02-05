@@ -18,7 +18,6 @@ namespace DI
             builder.Register<ConfigurationService>(Lifetime.Singleton).AsImplementedInterfaces();
             builder.Register<LoggerService>(Lifetime.Singleton).AsImplementedInterfaces();
             builder.Register<GameStateManager>(Lifetime.Singleton).AsImplementedInterfaces();
-            builder.Register<EventBus>(Lifetime.Singleton).AsImplementedInterfaces();
             builder.Register<ComponentFactory>(Lifetime.Singleton).AsImplementedInterfaces();
             
             builder.RegisterComponentOnNewGameObject<InputService>(Lifetime.Singleton).DontDestroyOnLoad()

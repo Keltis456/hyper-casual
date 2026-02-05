@@ -3,18 +3,15 @@ using UnityEngine;
 
 public class GrassChunk : MonoBehaviour
 {
-    [SerializeField] private Vector2 size = new Vector2(10f, 10f);
-    [SerializeField] private int density = 500;
-    [SerializeField] private float grassYOrigin = 1;
+    [SerializeField] private Transform graphics;
     [SerializeField] private string chunkId = "";
     
-    private GPUGrassRenderer grassRenderer;
-    private static Dictionary<string, Dictionary<GrassBlade.BladeKey, float>> cutStateCache = new();
-
-    public Vector2 Size => size;
-    public int Density => density;
-    public float GrassYOrigin => grassYOrigin;
-    public string ChunkId => chunkId;
+    private GPUGrassRenderer _grassRenderer;
+    private static readonly Dictionary<string, Dictionary<GrassBlade.BladeKey, float>> CutStateCache = new();
+    private float _chunkWidth;
+    private float _chunkLength;
+    private int _density;
+    private float _grassYOrigin;
 
     void Awake()
     {
@@ -22,38 +19,43 @@ public class GrassChunk : MonoBehaviour
             chunkId = System.Guid.NewGuid().ToString();
     }
 
-    public void Initialize(GPUGrassRenderer renderer)
+    public void Initialize(GPUGrassRenderer grassRenderer, float width, float length, int grassDensity, float yOrigin)
     {
-        grassRenderer = renderer;
+        _grassRenderer = grassRenderer;
+        _chunkWidth = width;
+        _chunkLength = length;
+        _density = grassDensity;
+        _grassYOrigin = yOrigin;
+        graphics.localScale = new Vector3(width, 1, length);
     }
 
     void OnEnable()
     {
-        if (grassRenderer == null)
+        if (_grassRenderer == null)
         {
-            grassRenderer = FindFirstObjectByType<GPUGrassRenderer>();
+            _grassRenderer = FindFirstObjectByType<GPUGrassRenderer>();
         }
         
-        grassRenderer?.RegisterChunk(this);
+        _grassRenderer?.RegisterChunk(this);
     }
 
     void OnDisable()
     {
-        if (grassRenderer != null)
+        if (_grassRenderer != null)
         {
             CacheCutState();
-            grassRenderer.UnregisterChunk(this);
+            _grassRenderer.UnregisterChunk(this);
         }
     }
 
     private void CacheCutState()
     {
-        if (grassRenderer == null) return;
+        if (_grassRenderer == null) return;
         
-        var bladeBuffer = grassRenderer.GetBladeBuffer();
+        var bladeBuffer = _grassRenderer.GetBladeBuffer();
         if (bladeBuffer == null) return;
         
-        int bladeCount = grassRenderer.GetBladeCount();
+        int bladeCount = _grassRenderer.GetBladeCount();
         if (bladeBuffer == null || bladeCount == 0) return;
         try
         {
@@ -68,22 +70,22 @@ public class GrassChunk : MonoBehaviour
                     dict[key] = b.cut;
                 }
             }
-            cutStateCache[chunkId] = dict;
+            CutStateCache[chunkId] = dict;
         }
         catch { }
     }
 
     private uint GetChunkIndex()
     {
-        if (grassRenderer == null) return 0;
-        return (uint)grassRenderer.GetChunkIndex(this);
+        if (_grassRenderer == null) return 0;
+        return (uint)_grassRenderer.GetChunkIndex(this);
     }
 
     public Dictionary<GrassBlade.BladeKey, float> GetCachedCutStateAndClear()
     {
-        if (cutStateCache.TryGetValue(chunkId, out var dict))
+        if (CutStateCache.TryGetValue(chunkId, out var dict))
         {
-            cutStateCache.Remove(chunkId);
+            CutStateCache.Remove(chunkId);
             return dict;
         }
         return null;
@@ -94,15 +96,15 @@ public class GrassChunk : MonoBehaviour
         int seed = chunkId.GetHashCode();
         var rand = new System.Random(seed);
 
-        for (int i = 0; i < density; i++)
+        for (int i = 0; i < _density*_chunkWidth*_chunkLength; i++)
         {
-            float x = (float)(rand.NextDouble() * size.x - size.x / 2f);
-            float z = (float)(rand.NextDouble() * size.y - size.y / 2f);
+            float x = (float)((rand.NextDouble() - 0.5) * _chunkWidth);
+            float z = (float)((rand.NextDouble() - 0.5) * _chunkLength);
             var rotationRandomisationRange = 0.75f;
             float rotation = (float)(rand.NextDouble() * (Mathf.PI * (2 - rotationRandomisationRange) - Mathf.PI * rotationRandomisationRange) + Mathf.PI * rotationRandomisationRange);
             float seedVal = (float)rand.NextDouble();
 
-            Vector3 local = new Vector3(x, grassYOrigin, z);
+            Vector3 local = new Vector3(x, _grassYOrigin, z);
 
             float cut = 0f;
             if (previousCuts != null)
@@ -121,11 +123,5 @@ public class GrassChunk : MonoBehaviour
                 rotation = rotation
             });
         }
-    }
-
-    public void ReRegister()
-    {
-        grassRenderer?.UnregisterChunk(this);
-        grassRenderer?.RegisterChunk(this);
     }
 }

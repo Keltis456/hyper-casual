@@ -12,26 +12,27 @@ namespace Common.Configuration
         public float playerMovementSmoothing = 5f;
 
         [Header("Level Settings")]
+        public float chunkWidth = 10f;
         public float chunkLength = 20f;
         public int initialChunks = 3;
         public int maxChunks = 5;
-        public float levelEndDistance = 100f;
         public float chunkDespawnDistanceMultiplier = 3f;
 
+        [Header("Grass Settings")]
+        public int grassDensityPerChunk = 500;
+        public float grassYOrigin = 1f;
+        
         [Header("Grass Cutting Settings")]
         public float grassCutRadius = 1f;
         public float grassCutDistance = 0.5f;
-        public int grassDensityPerChunk = 500;
 
         [Header("Performance Settings")]
         public int objectPoolPreWarmCount = 10;
         public int targetFrameRate = 60;
-        public bool enableVSync = false;
         public int maxGrassRenderDistance = 50;
 
         [Header("Input Settings")]
         public float inputSensitivity = 1f;
-        public bool enableHapticFeedback = true;
 
         [Header("Audio Settings")]
         public float masterVolume = 1f;
@@ -39,9 +40,7 @@ namespace Common.Configuration
         public float musicVolume = 0.7f;
 
         [Header("Debug Settings")]
-        public bool enableDebugLogs = false;
-        public bool showPerformanceStats = false;
-        public bool enableGizmos = false;
+        public bool enableDebugLogs;
 
         void OnValidate()
         {
@@ -51,15 +50,17 @@ namespace Common.Configuration
             playerLaneLimit = Mathf.Max(0.1f, playerLaneLimit);
             playerMovementSmoothing = Mathf.Max(0.1f, playerMovementSmoothing);
             
+            chunkWidth = Mathf.Max(1f, chunkWidth);
             chunkLength = Mathf.Max(1f, chunkLength);
             initialChunks = Mathf.Max(1, initialChunks);
             maxChunks = Mathf.Max(initialChunks, maxChunks);
-            levelEndDistance = Mathf.Max(chunkLength, levelEndDistance);
             chunkDespawnDistanceMultiplier = Mathf.Max(1f, chunkDespawnDistanceMultiplier);
+            
+            grassDensityPerChunk = Mathf.Max(1, grassDensityPerChunk);
+            grassYOrigin = Mathf.Max(0f, grassYOrigin);
             
             grassCutRadius = Mathf.Max(0.1f, grassCutRadius);
             grassCutDistance = Mathf.Max(0.1f, grassCutDistance);
-            grassDensityPerChunk = Mathf.Max(1, grassDensityPerChunk);
             
             objectPoolPreWarmCount = Mathf.Max(0, objectPoolPreWarmCount);
             targetFrameRate = Mathf.Clamp(targetFrameRate, 30, 120);

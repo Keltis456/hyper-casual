@@ -15,10 +15,12 @@ namespace Common.Services
         public float GrassCutRadius => Config?.grassCutRadius ?? 1f;
         public float GrassCutDistance => Config?.grassCutDistance ?? 0.5f;
         public int ObjectPoolPreWarmCount => Config?.objectPoolPreWarmCount ?? 10;
+        public float ChunkWidth => Config?.chunkWidth ?? 10f;
         public float ChunkLength => Config?.chunkLength ?? 20f;
+        public int GrassDensityPerChunk => Config?.grassDensityPerChunk ?? 500;
+        public float GrassYOrigin => Config?.grassYOrigin ?? 1f;
         public int InitialChunks => Config?.initialChunks ?? 3;
         public int MaxChunks => Config?.maxChunks ?? 5;
-        public float LevelEndDistance => Config?.levelEndDistance ?? 100f;
         public float ChunkDespawnDistanceMultiplier => Config?.chunkDespawnDistanceMultiplier ?? 3f;
 
         public ConfigurationService()
@@ -35,71 +37,6 @@ namespace Common.Services
                 Debug.LogWarning($"GameConfig not found at Resources/{GameConstants.ConfigResourcePath}. Using default values.");
                 Config = ScriptableObject.CreateInstance<GameConfig>();
             }
-        }
-
-        public void SaveConfiguration()
-        {
-            PlayerPrefs.Save();
-        }
-
-        public T GetValue<T>(string key, T defaultValue = default)
-        {
-            if (!HasKey(key))
-                return defaultValue;
-
-            var type = typeof(T);
-            
-            if (type == typeof(string))
-                return (T)(object)PlayerPrefs.GetString(key, defaultValue?.ToString() ?? "");
-            else if (type == typeof(int))
-                return (T)(object)PlayerPrefs.GetInt(key, defaultValue is int intDefault ? intDefault : 0);
-            else if (type == typeof(float))
-                return (T)(object)PlayerPrefs.GetFloat(key, defaultValue is float floatDefault ? floatDefault : 0f);
-            else if (type == typeof(bool))
-                return (T)(object)(PlayerPrefs.GetInt(key, defaultValue is bool boolDefault && boolDefault ? 1 : 0) == 1);
-            else
-            {
-                Debug.LogWarning($"Unsupported type {type} for configuration key {key}");
-                return defaultValue;
-            }
-        }
-
-        public void SetValue<T>(string key, T value)
-        {
-            var type = typeof(T);
-            
-            if (type == typeof(string))
-                PlayerPrefs.SetString(key, value?.ToString() ?? "");
-            else if (type == typeof(int))
-                PlayerPrefs.SetInt(key, value is int intValue ? intValue : 0);
-            else if (type == typeof(float))
-                PlayerPrefs.SetFloat(key, value is float floatValue ? floatValue : 0f);
-            else if (type == typeof(bool))
-                PlayerPrefs.SetInt(key, value is bool boolValue && boolValue ? 1 : 0);
-            else
-            {
-                Debug.LogWarning($"Unsupported type {type} for configuration key {key}");
-                return;
-            }
-            
-            Debug.Log($"Configuration value set: {key} = {value}");
-        }
-
-        public bool HasKey(string key)
-        {
-            return PlayerPrefs.HasKey(key);
-        }
-
-        public void DeleteKey(string key)
-        {
-            PlayerPrefs.DeleteKey(key);
-            Debug.Log($"Configuration key deleted: {key}");
-        }
-
-        public void DeleteAll()
-        {
-            PlayerPrefs.DeleteAll();
-            Debug.Log("All configuration keys deleted.");
         }
     }
 }

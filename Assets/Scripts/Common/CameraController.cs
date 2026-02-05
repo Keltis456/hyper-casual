@@ -9,7 +9,6 @@ public class CameraController : MonoBehaviour
     [SerializeField] private float smoothSpeed = 5f;
 
     [Inject] private PlayerController player { get; set; }
-    [Inject] private IEventBus EventBus { get; set; }
     [Inject] private ILogger Logger { get; set; }
 
     private Vector3 offset;
@@ -24,34 +23,18 @@ public class CameraController : MonoBehaviour
             return;
         }
 
-        if (EventBus == null)
-        {
-            Logger?.LogError($"{nameof(CameraController)}: {nameof(EventBus)} not injected!");
-        }
-
         playerTransform = player.transform;
         offset = transform.position - playerTransform.position;
-        
-        if (EventBus != null)
-        {
-            EventBus.Subscribe<PlayerMovedEvent>(OnPlayerMoved);
-        }
     }
 
-    void OnDestroy()
+    void LateUpdate()
     {
-        if (EventBus != null)
-        {
-            EventBus.Unsubscribe<PlayerMovedEvent>(OnPlayerMoved);
-        }
-    }
+        if (playerTransform == null) return;
 
-    private void OnPlayerMoved(PlayerMovedEvent playerEvent)
-    {
         Vector3 targetPos = new Vector3(
             transform.position.x,
             transform.position.y,
-            playerEvent.Position.z + offset.z
+            playerTransform.position.z + offset.z
         );
         transform.position = Vector3.Lerp(transform.position, targetPos, smoothSpeed * Time.deltaTime);
     }

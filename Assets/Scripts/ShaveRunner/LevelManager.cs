@@ -10,41 +10,34 @@ namespace ShaveRunner
     {
         [Header("Level References")]
         [SerializeField] private GameObject levelChunkPrefab;
-        [SerializeField] private GameObject winScreen;
 
-        [Inject] private PlayerController player { get; set; }
+        [Inject] private PlayerController Player { get; set; }
         [Inject] private IObjectPoolService ObjectPoolService { get; set; }
-        [Inject] private IEventBus EventBus { get; set; }
         [Inject] private IGameStateManager GameStateManager { get; set; }
         [Inject] private IConfigurationService ConfigService { get; set; }
         [Inject] private ILogger Logger { get; set; }
         [Inject] private GPUGrassRenderer GrassRenderer { get; set; }
 
-        private int _chunksSpawned = 0;
-        private float _lastChunkEndZ = 0f;
+        private int _chunksSpawned;
+        private float _lastChunkEndZ;
         private bool _levelCompleted = false;
-        private float _actualChunkLength = 0f;
+        private float _actualChunkLength;
         private readonly List<Transform> _activeChunks = new();
 
         void Start()
         {
-            if (player == null)
+            if (Player == null)
             {
-                Logger?.LogError($"{nameof(LevelManager)}: {nameof(player)} not injected!");
+                Logger?.LogError($"{nameof(LevelManager)}: {nameof(Player)} not injected!");
+            }
+            else
+            {
+                Player.OnPlayerMoved += OnPlayerMoved;
             }
             
             if (ObjectPoolService == null)
             {
                 Logger?.LogError($"{nameof(LevelManager)}: {nameof(ObjectPoolService)} not injected!");
-            }
-            
-            if (EventBus == null)
-            {
-                Logger?.LogError($"{nameof(LevelManager)}: {nameof(EventBus)} not injected!");
-            }
-            else
-            {
-                EventBus.Subscribe<PlayerMovedEvent>(OnPlayerMoved);
             }
             
             if (GameStateManager == null)
@@ -67,18 +60,26 @@ namespace ShaveRunner
 
         void OnDestroy()
         {
-            if (EventBus != null)
+            if (Player != null)
             {
-                EventBus.Unsubscribe<PlayerMovedEvent>(OnPlayerMoved);
+                Player.OnPlayerMoved -= OnPlayerMoved;
             }
         }
 
         private void InitializeLevel()
         {
-            if (levelChunkPrefab != null)
+            if (ConfigService == null)
             {
-                var grassChunk = levelChunkPrefab.GetComponent<GrassChunk>();
-                _actualChunkLength = grassChunk != null ? grassChunk.Size.y : ConfigService.ChunkLength;
+                Logger?.LogError($"{nameof(LevelManager)}: Cannot initialize level, ConfigService is null!");
+                return;
+            }
+
+            _actualChunkLength = ConfigService.ChunkLength;
+
+            if (_actualChunkLength <= 0f)
+            {
+                _actualChunkLength = 20f;
+                Logger?.LogError($"{nameof(LevelManager)}: Invalid chunk length, using fallback value of 20f");
             }
 
             if (ObjectPoolService != null && levelChunkPrefab != null)
@@ -97,29 +98,16 @@ namespace ShaveRunner
 
         private void OnPlayerMoved(PlayerMovedEvent playerEvent)
         {
-            if (_levelCompleted) return;
+            if (_levelCompleted || ConfigService == null) return;
 
-            int maxChunks = ConfigService.MaxChunks;
-            float endZ = ConfigService.LevelEndDistance;
+            int maxActiveChunks = ConfigService.MaxChunks;
 
-            if (playerEvent.Position.z + _actualChunkLength > _lastChunkEndZ && _chunksSpawned < maxChunks)
+            if (playerEvent.Position.z >= _lastChunkEndZ - _actualChunkLength && _activeChunks.Count < maxActiveChunks)
             {
                 SpawnChunk();
             }
 
             DespawnOldChunks(playerEvent.Position.z);
-
-            if (playerEvent.Position.z >= endZ)
-            {
-                CompleteLevel();
-            }
-
-            float progress = Mathf.Clamp01(playerEvent.Position.z / endZ);
-            EventBus?.Publish(new LevelProgressEvent
-            {
-                Progress = progress,
-                Distance = playerEvent.Position.z
-            });
         }
 
         private void SpawnChunk()
@@ -131,11 +119,12 @@ namespace ShaveRunner
             
             chunkTransform.position = spawnPos;
             chunkTransform.rotation = Quaternion.identity;
+            chunkTransform.localScale = Vector3.one;
             
             var grassChunk = chunkTransform.GetComponent<GrassChunk>();
             if (grassChunk != null && GrassRenderer != null)
             {
-                grassChunk.Initialize(GrassRenderer);
+                grassChunk.Initialize(GrassRenderer, ConfigService.ChunkWidth, _actualChunkLength, ConfigService.GrassDensityPerChunk, ConfigService.GrassYOrigin);
             }
             
             _activeChunks.Add(chunkTransform);
@@ -161,72 +150,6 @@ namespace ShaveRunner
                     Logger?.LogDebug($"Despawned chunk at {chunk.position.z}");
                 }
             }
-        }
-
-        private void CompleteLevel()
-        {
-            if (_levelCompleted) return;
-            
-            _levelCompleted = true;
-            
-            EventBus?.Publish(new GameOverEvent
-            {
-                FinalScore = CalculateFinalScore(),
-                Distance = player.transform.position.z,
-                IsWin = true
-            });
-
-            GameStateManager?.ChangeState(GameState.GameOver);
-
-            if (winScreen != null)
-            {
-                winScreen.SetActive(true);
-            }
-
-            Logger?.LogInfo("Level completed!");
-        }
-
-        private float CalculateFinalScore()
-        {
-            return player.transform.position.z * Common.GameConstants.ScoreMultiplier;
-        }
-
-        public void RestartLevel()
-        {
-            _levelCompleted = false;
-            _chunksSpawned = 0;
-            _lastChunkEndZ = 0f;
-
-            foreach (var chunk in _activeChunks)
-            {
-                if (chunk != null)
-                {
-                    ObjectPoolService?.Return(chunk);
-                }
-            }
-            _activeChunks.Clear();
-
-            if (player != null)
-            {
-                player.transform.position = Vector3.zero;
-            }
-
-            if (winScreen != null)
-            {
-                winScreen.SetActive(false);
-            }
-
-            InitializeLevel();
-        }
-
-        public float GetLevelProgress()
-        {
-            return player != null ? Mathf.Clamp01(player.transform.position.z / ConfigService.LevelEndDistance) : 0f;
-        }
-
-        public float GetDistanceTraveled()
-        {
-            return player != null ? player.transform.position.z : 0f;
         }
     }
 }
