@@ -16,6 +16,7 @@ namespace Common.Configuration
         public int initialChunks = 3;
         public int maxChunks = 5;
         public float levelEndDistance = 100f;
+        public float chunkDespawnDistanceMultiplier = 3f;
 
         [Header("Grass Cutting Settings")]
         public float grassCutRadius = 1f;
@@ -54,6 +55,7 @@ namespace Common.Configuration
             initialChunks = Mathf.Max(1, initialChunks);
             maxChunks = Mathf.Max(initialChunks, maxChunks);
             levelEndDistance = Mathf.Max(chunkLength, levelEndDistance);
+            chunkDespawnDistanceMultiplier = Mathf.Max(1f, chunkDespawnDistanceMultiplier);
             
             grassCutRadius = Mathf.Max(0.1f, grassCutRadius);
             grassCutDistance = Mathf.Max(0.1f, grassCutDistance);

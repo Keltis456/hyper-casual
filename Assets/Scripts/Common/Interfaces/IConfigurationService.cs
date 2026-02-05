@@ -13,6 +13,11 @@ namespace Common.Interfaces
         float GrassCutRadius { get; }
         float GrassCutDistance { get; }
         int ObjectPoolPreWarmCount { get; }
+        float ChunkLength { get; }
+        int InitialChunks { get; }
+        int MaxChunks { get; }
+        float LevelEndDistance { get; }
+        float ChunkDespawnDistanceMultiplier { get; }
         
         void LoadConfiguration();
         void SaveConfiguration();

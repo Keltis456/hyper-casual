@@ -8,13 +8,9 @@ namespace ShaveRunner
 {
     public class LevelManager : MonoBehaviour
     {
-        [Header("Level Settings")]
+        [Header("Level References")]
         [SerializeField] private GameObject levelChunkPrefab;
-        [SerializeField] private float chunkLength = 20f;
-        [SerializeField] private int initialChunks = 3;
-        [SerializeField] private int maxChunks = 5;
         [SerializeField] private GameObject winScreen;
-        [SerializeField] private float endZ = 100f;
 
         [Inject] private PlayerController player { get; set; }
         [Inject] private IObjectPoolService ObjectPoolService { get; set; }
@@ -27,6 +23,7 @@ namespace ShaveRunner
         private int _chunksSpawned = 0;
         private float _lastChunkEndZ = 0f;
         private bool _levelCompleted = false;
+        private float _actualChunkLength = 0f;
         private readonly List<Transform> _activeChunks = new();
 
         void Start()
@@ -78,13 +75,19 @@ namespace ShaveRunner
 
         private void InitializeLevel()
         {
+            if (levelChunkPrefab != null)
+            {
+                var grassChunk = levelChunkPrefab.GetComponent<GrassChunk>();
+                _actualChunkLength = grassChunk != null ? grassChunk.Size.y : ConfigService.ChunkLength;
+            }
+
             if (ObjectPoolService != null && levelChunkPrefab != null)
             {
                 int preWarmCount = ConfigService.ObjectPoolPreWarmCount;
                 ObjectPoolService.PreWarm(levelChunkPrefab.GetComponent<Transform>(), preWarmCount, transform);
             }
 
-            for (int i = 0; i < initialChunks; i++)
+            for (int i = 0; i < ConfigService.InitialChunks; i++)
             {
                 SpawnChunk();
             }
@@ -96,7 +99,10 @@ namespace ShaveRunner
         {
             if (_levelCompleted) return;
 
-            if (playerEvent.Position.z + chunkLength > _lastChunkEndZ && _chunksSpawned < maxChunks)
+            int maxChunks = ConfigService.MaxChunks;
+            float endZ = ConfigService.LevelEndDistance;
+
+            if (playerEvent.Position.z + _actualChunkLength > _lastChunkEndZ && _chunksSpawned < maxChunks)
             {
                 SpawnChunk();
             }
@@ -133,20 +139,22 @@ namespace ShaveRunner
             }
             
             _activeChunks.Add(chunkTransform);
-            _lastChunkEndZ += chunkLength;
+            _lastChunkEndZ += _actualChunkLength;
             _chunksSpawned++;
 
-            Logger?.LogDebug($"Spawned chunk {_chunksSpawned} at position {spawnPos}");
+            Logger?.LogDebug($"Spawned chunk {_chunksSpawned} at position {spawnPos}, length: {_actualChunkLength}");
         }
 
         private void DespawnOldChunks(float playerZ)
         {
             if (ObjectPoolService == null) return;
 
+            float despawnDistance = _actualChunkLength * ConfigService.ChunkDespawnDistanceMultiplier;
+
             for (int i = _activeChunks.Count - 1; i >= 0; i--)
             {
                 var chunk = _activeChunks[i];
-                if (chunk != null && playerZ - chunk.position.z > chunkLength * 3f)
+                if (chunk != null && playerZ - chunk.position.z > despawnDistance)
                 {
                     ObjectPoolService.Return(chunk);
                     _activeChunks.RemoveAt(i);
@@ -213,7 +221,7 @@ namespace ShaveRunner
 
         public float GetLevelProgress()
         {
-            return player != null ? Mathf.Clamp01(player.transform.position.z / endZ) : 0f;
+            return player != null ? Mathf.Clamp01(player.transform.position.z / ConfigService.LevelEndDistance) : 0f;
         }
 
         public float GetDistanceTraveled()

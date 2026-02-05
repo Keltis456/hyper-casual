@@ -15,6 +15,11 @@ namespace Common.Services
         public float GrassCutRadius => Config?.grassCutRadius ?? 1f;
         public float GrassCutDistance => Config?.grassCutDistance ?? 0.5f;
         public int ObjectPoolPreWarmCount => Config?.objectPoolPreWarmCount ?? 10;
+        public float ChunkLength => Config?.chunkLength ?? 20f;
+        public int InitialChunks => Config?.initialChunks ?? 3;
+        public int MaxChunks => Config?.maxChunks ?? 5;
+        public float LevelEndDistance => Config?.levelEndDistance ?? 100f;
+        public float ChunkDespawnDistanceMultiplier => Config?.chunkDespawnDistanceMultiplier ?? 3f;
 
         public ConfigurationService()
         {
